@@ -93,6 +93,71 @@ npm run dev
 # 前端运行在 http://localhost:5173
 ```
 
+### Docker 部署
+
+#### 环境要求
+
+- Docker 20.10+
+- Docker Compose 2.0+
+
+#### 快速启动
+
+1. 克隆项目
+
+```bash
+git clone https://github.com/BooboNikita/fundTool.git
+cd fundTool
+```
+
+2. 配置环境变量
+
+```bash
+cp .env.example .env
+# 编辑 .env 文件，修改密码等配置
+```
+
+3. 启动服务
+
+```bash
+docker-compose up -d
+```
+
+4. 访问应用
+
+- 前端：http://localhost
+- 后端 API：http://localhost:3001
+
+#### Docker Compose 服务说明
+
+| 服务     | 端口 | 说明             |
+| -------- | ---- | ---------------- |
+| mysql    | 3306 | MySQL 8.0 数据库 |
+| backend  | 3001 | Node.js API 服务 |
+| frontend | 80   | Nginx 前端服务   |
+
+#### 常用命令
+
+```bash
+# 启动服务
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+
+# 重新构建镜像
+docker-compose up -d --build
+
+# 删除所有数据（包括数据库）
+docker-compose down -v
+```
+
+#### 数据持久化
+
+MySQL 数据存储在 Docker volume 中，删除容器不会丢失数据。
+
 ## 项目结构
 
 ```
@@ -104,6 +169,7 @@ fundTool/
 │   │   ├── routes/       # 路由
 │   │   ├── types/        # 类型定义
 │   │   └── index.ts      # 入口文件
+│   ├── Dockerfile         # Docker 配置
 │   └── package.json
 ├── frontend/              # 前端应用
 │   ├── src/
@@ -114,7 +180,11 @@ fundTool/
 │   │   ├── types/       # 类型定义
 │   │   ├── utils/       # 工具函数
 │   │   └── App.tsx      # 应用入口
+│   ├── Dockerfile         # Docker 配置
+│   ├── nginx.conf         # Nginx 配置
 │   └── package.json
+├── docker-compose.yml    # Docker Compose 配置
+├── .env.example          # 环境变量示例
 └── README.md
 ```
 
