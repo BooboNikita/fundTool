@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthResponse, Fund, FundWithEstimation, FundSearchResult } from './types';
+import { AuthResponse, Fund, FundWithEstimation, FundSearchResult, AllFundsResponse, DingTalkConfig } from '../types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -34,23 +34,56 @@ export const authApi = {
 };
 
 export const fundApi = {
-  search: (keyword: string) =>
-    api.get<{ results: FundSearchResult[] }>('/funds/search', { params: { keyword } }),
+  search: (keyword: string, limit?: number) =>
+    api.get<{ results: FundSearchResult[] }>('/funds/search', { 
+      params: { keyword, limit } 
+    }),
   
-  add: (code: string, note?: string) =>
-    api.post<{ message: string; fund: Fund }>('/funds/add', { code, note }),
+  getAll: (page?: number, limit?: number) =>
+    api.get<AllFundsResponse>('/funds/all', { 
+      params: { page, limit } 
+    }),
+  
+  add: (code: string, is_watchlist?: boolean, is_holding?: boolean, note?: string) =>
+    api.post<{ message: string; fund: Fund }>('/funds/add', { 
+      code, 
+      is_watchlist: is_watchlist ?? true, 
+      is_holding: is_holding ?? false, 
+      note 
+    }),
+  
+  updateFlags: (code: string, is_watchlist: boolean, is_holding: boolean) =>
+    api.patch<{ message: string }>(`/funds/${code}/flags`, { is_watchlist, is_holding }),
   
   remove: (code: string) =>
     api.delete<{ message: string }>(`/funds/${code}`),
   
-  getPortfolio: () =>
-    api.get<{ funds: Fund[] }>('/funds/portfolio'),
+  getPortfolio: (filter?: 'watchlist' | 'holding') =>
+    api.get<{ funds: Fund[] }>('/funds/portfolio', { 
+      params: filter ? { filter } : {} 
+    }),
   
-  getPortfolioEstimation: () =>
-    api.get<{ estimations: FundWithEstimation[] }>('/funds/portfolio/estimation'),
+  getPortfolioEstimation: (filter?: 'watchlist' | 'holding') =>
+    api.get<{ estimations: FundWithEstimation[] }>('/funds/portfolio/estimation', { 
+      params: filter ? { filter } : {} 
+    }),
   
   getEstimation: (code: string) =>
     api.get<{ estimation: FundWithEstimation['estimation'] }>(`/funds/estimation/${code}`),
+};
+
+export const dingtalkApi = {
+  getConfig: () =>
+    api.get<{ config: DingTalkConfig | null }>('/dingtalk/config'),
+  
+  saveConfig: (config: DingTalkConfig) =>
+    api.post<{ message: string }>('/dingtalk/config', config),
+  
+  testPush: (webhook_url: string, secret?: string) =>
+    api.post<{ message: string }>('/dingtalk/test', { webhook_url, secret }),
+  
+  pushNow: () =>
+    api.post<{ message: string; count: number }>('/dingtalk/push'),
 };
 
 export default api;

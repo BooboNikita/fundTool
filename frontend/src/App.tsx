@@ -1,10 +1,12 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { Home } from './pages/Home';
-import './styles/global.css';
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
+import { Home } from "./pages/Home";
+import { FundExplorer } from "./pages/FundExplorer";
+import { Settings } from "./pages/Settings";
+import "./styles/global.css";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -40,6 +42,22 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <Home />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/explorer"
+        element={
+          <PrivateRoute>
+            <FundExplorer />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <Settings />
           </PrivateRoute>
         }
       />

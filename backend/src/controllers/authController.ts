@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import db from '../models/database';
 import { generateToken } from '../middleware/auth';
 
-export const register = (req: Request, res: Response): void => {
+export const register = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -19,29 +19,33 @@ export const register = (req: Request, res: Response): void => {
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
     
-    const stmt = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
-    const result = stmt.run(username, hashedPassword);
+    const [result] = await db.execute(
+      'INSERT INTO users (username, password) VALUES (?, ?)',
+      [username, hashedPassword]
+    );
     
-    const token = generateToken(result.lastInsertRowid as number);
+    const insertId = (result as any).insertId;
+    const token = generateToken(insertId);
     
     res.status(201).json({
       message: 'User registered successfully',
       token,
       user: {
-        id: result.lastInsertRowid,
+        id: insertId,
         username
       }
     });
   } catch (error: any) {
-    if (error.code === 'SQLITE_CONSTRAINT') {
+    if (error.code === 'ER_DUP_ENTRY') {
       res.status(409).json({ error: 'Username already exists' });
     } else {
+      console.error('Register error:', error);
       res.status(500).json({ error: 'Failed to register user' });
     }
   }
 };
 
-export const login = (req: Request, res: Response): void => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -50,13 +54,15 @@ export const login = (req: Request, res: Response): void => {
   }
 
   try {
-    const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-    const user = stmt.get(username) as any;
+    const [rows] = await db.execute('SELECT * FROM users WHERE username = ?', [username]);
+    const users = rows as any[];
 
-    if (!user) {
+    if (users.length === 0) {
       res.status(401).json({ error: 'Invalid username or password' });
       return;
     }
+
+    const user = users[0];
 
     if (!bcrypt.compareSync(password, user.password)) {
       res.status(401).json({ error: 'Invalid username or password' });
@@ -74,6 +80,7 @@ export const login = (req: Request, res: Response): void => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Failed to login' });
   }
 };

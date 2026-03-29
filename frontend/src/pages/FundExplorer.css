@@ -1,0 +1,396 @@
+.explorer-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.explorer-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.explorer-header .header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.explorer-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-info {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.header-info .highlight {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.explorer-main {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+.search-section {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.search-section .search-input {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-result-count {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.fund-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.fund-card {
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fund-card:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.fund-card.selected {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.fund-card-code {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--accent-secondary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.fund-card-name {
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.fund-card-type {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 16px 0;
+}
+
+.page-btn {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.fund-detail {
+  margin-bottom: 20px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.detail-label {
+  width: 60px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.detail-value {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.detail-value.code {
+  font-family: monospace;
+  color: var(--accent-secondary);
+  font-weight: 500;
+}
+
+.add-options {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.category-label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.checkbox-group-modal {
+  display: flex;
+  gap: 16px;
+}
+
+.checkbox-group-modal .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.checkbox-group-modal .checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+.category-options {
+  display: flex;
+  gap: 10px;
+}
+
+.category-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.category-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+@media (max-width: 768px) {
+  .explorer-header .header-content {
+    padding: 10px 16px;
+  }
+
+  .explorer-header h1 {
+    font-size: 16px;
+  }
+
+  .header-info {
+    display: none;
+  }
+
+  .explorer-main {
+    padding: 12px 16px;
+  }
+
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-section .search-input {
+    max-width: none;
+  }
+
+  .fund-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+
+  .fund-card {
+    padding: 10px;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+}

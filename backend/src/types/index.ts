@@ -11,7 +11,20 @@ export interface Fund {
   code: string;
   name: string;
   note: string;
+  is_watchlist: boolean;
+  is_holding: boolean;
   created_at: string;
+}
+
+export interface DingTalkConfig {
+  id: number;
+  user_id: number;
+  webhook_url: string;
+  secret: string;
+  push_time: string;
+  push_enabled: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FundEstimation {
@@ -28,4 +41,5 @@ export interface FundEstimation {
 export interface FundSearchResult {
   code: string;
   name: string;
+  type?: string;
 }
