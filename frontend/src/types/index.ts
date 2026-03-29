@@ -31,6 +31,7 @@ export interface FundEstimation {
 }
 
 export interface FundWithEstimation extends Fund {
+  type?: string;
   estimation: FundEstimation | null;
 }
 

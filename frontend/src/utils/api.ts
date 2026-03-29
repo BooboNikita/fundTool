@@ -70,6 +70,9 @@ export const fundApi = {
   
   getEstimation: (code: string) =>
     api.get<{ estimation: FundWithEstimation['estimation'] }>(`/funds/estimation/${code}`),
+  
+  getTop10: () =>
+    api.get<{ top10: FundWithEstimation[] }>('/funds/top10'),
 };
 
 export const dingtalkApi = {

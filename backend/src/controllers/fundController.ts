@@ -366,3 +366,50 @@ export async function getFundEstimation(req: AuthRequest, res: Response): Promis
     res.status(500).json({ error: 'Failed to get fund estimation' });
   }
 }
+
+const HOT_FUND_CODES = [
+  '110011', '000961', '161725', '519778', '007301',
+  '005827', '161033', '501062', '159766', '512690',
+  '515790', '512480', '159996', '588000', '510300',
+  '159915', '512880', '515030', '161005', '260108',
+  '000751', '040008', '202015', '090010', '217010',
+  '000968', '004854', '501059', '159780', '512760',
+  '515050', '159949', '515000', '159941', '513100',
+  '159920', '510500', '512100', '159919', '510050',
+  '588080', '159901', '510300', '159949', '512660',
+  '515030', '159915', '512760', '515790', '512480'
+];
+
+export async function getTop10Funds(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const fundMap = await getFundInfoMap();
+    
+    const estimations = await Promise.all(
+      HOT_FUND_CODES.map(async (code) => {
+        const estimation = await fetchFundEstimation(code);
+        const fundInfo = fundMap.get(code);
+        return {
+          code,
+          name: fundInfo?.name || estimation?.name || code,
+          type: fundInfo?.type || '',
+          estimation
+        };
+      })
+    );
+    
+    const validEstimations = estimations.filter(e => e.estimation && e.estimation.estimate_growth_rate);
+    
+    validEstimations.sort((a, b) => {
+      const rateA = parseFloat(a.estimation!.estimate_growth_rate?.replace('%', '') || '0');
+      const rateB = parseFloat(b.estimation!.estimate_growth_rate?.replace('%', '') || '0');
+      return rateB - rateA;
+    });
+    
+    const top10 = validEstimations.slice(0, 10);
+    
+    res.json({ top10 });
+  } catch (error) {
+    console.error('Get top 10 funds error:', error);
+    res.status(500).json({ error: 'Failed to get top 10 funds' });
+  }
+}

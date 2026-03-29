@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { fundApi } from "../utils/api";
-import { FundSearchResult } from "../types";
+import { FundSearchResult, FundWithEstimation } from "../types";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import "./FundExplorer.css";
@@ -21,6 +21,8 @@ export function FundExplorer() {
   const [addWatchlist, setAddWatchlist] = useState(true);
   const [addHolding, setAddHolding] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [top10Funds, setTop10Funds] = useState<FundWithEstimation[]>([]);
+  const [top10Loading, setTop10Loading] = useState(true);
 
   const fetchFunds = useCallback(async (pageNum: number) => {
     setLoading(true);
@@ -41,6 +43,21 @@ export function FundExplorer() {
   useEffect(() => {
     fetchFunds(1);
   }, [fetchFunds]);
+
+  useEffect(() => {
+    const fetchTop10 = async () => {
+      setTop10Loading(true);
+      try {
+        const response = await fundApi.getTop10();
+        setTop10Funds(response.data.top10);
+      } catch (error) {
+        console.error("Failed to fetch top 10 funds:", error);
+      } finally {
+        setTop10Loading(false);
+      }
+    };
+    fetchTop10();
+  }, []);
 
   useEffect(() => {
     if (!searchKeyword.trim()) {
@@ -97,6 +114,54 @@ export function FundExplorer() {
       </header>
 
       <main className="explorer-main">
+        <div className="top10-section">
+          <h2 className="section-title">
+            <span className="title-icon">🔥</span>
+            今日热门 TOP10
+          </h2>
+          {top10Loading ? (
+            <div className="top10-loading">
+              <div className="loading-spinner" />
+              <p>加载热门基金...</p>
+            </div>
+          ) : top10Funds.length > 0 ? (
+            <div className="top10-grid">
+              {top10Funds.map((fund, index) => (
+                <div
+                  key={fund.code}
+                  className="top10-card"
+                  onClick={() =>
+                    setSelectedFund({
+                      code: fund.code,
+                      name: fund.name,
+                      type: fund.type || "",
+                    })
+                  }
+                >
+                  <div className="top10-rank">#{index + 1}</div>
+                  <div className="top10-info">
+                    <div className="top10-name">{fund.name}</div>
+                    <div className="top10-code">{fund.code}</div>
+                  </div>
+                  <div
+                    className={`top10-rate ${
+                      fund.estimation?.estimate_growth_rate?.startsWith("-")
+                        ? "negative"
+                        : "positive"
+                    }`}
+                  >
+                    {fund.estimation?.estimate_growth_rate || "--"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="top10-empty">
+              <p>暂无数据（非交易时间）</p>
+            </div>
+          )}
+        </div>
+
         <div className="search-section">
           <Input
             placeholder="搜索基金代码、名称或类型..."

@@ -8,7 +8,8 @@ import {
   removeFund,
   getPortfolio,
   getPortfolioEstimation,
-  getFundEstimation
+  getFundEstimation,
+  getTop10Funds
 } from '../controllers/fundController';
 
 const router = Router();
@@ -17,6 +18,7 @@ router.use(authMiddleware);
 
 router.get('/search', searchFund);
 router.get('/all', getAllFunds);
+router.get('/top10', getTop10Funds);
 router.post('/add', addFund);
 router.patch('/:code/flags', updateFundFlags);
 router.delete('/:code', removeFund);
