@@ -170,12 +170,8 @@ export function Home() {
             </button>
           </div>
           <div className="toolbar-actions">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/settings")}
-            >
-              设置
+            <Button size="sm" onClick={() => setShowSearch(true)}>
+              添加基金
             </Button>
             <Button
               variant="ghost"
@@ -184,8 +180,12 @@ export function Home() {
             >
               基金浏览
             </Button>
-            <Button size="sm" onClick={() => setShowSearch(true)}>
-              添加基金
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/settings")}
+            >
+              设置
             </Button>
             <Button
               variant="secondary"
