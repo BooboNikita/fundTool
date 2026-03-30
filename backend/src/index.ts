@@ -8,7 +8,7 @@ import { initDatabase } from "./models/database";
 import { startScheduler } from "./controllers/dingtalkController";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3035;
 
 app.use(cors());
 app.use(express.json());
