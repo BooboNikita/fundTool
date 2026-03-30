@@ -11,7 +11,7 @@ services:
       NODE_ENV: production
       PROD_DB_HOST: mysql_n7tn-mysql_N7tN-1
       PROD_DB_PORT: 3306
-      PROD_DB_USER: root
+      PROD_DB_USER: app_platform
       PROD_DB_PASSWORD: i8ZPbjzY7CiXNStp
       PROD_DB_NAME: fund_tool
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
