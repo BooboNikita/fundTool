@@ -9,7 +9,7 @@ import {
 } from "../types";
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: "/fundTool/api",
 });
 
 api.interceptors.request.use((config) => {

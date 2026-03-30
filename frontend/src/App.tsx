@@ -68,7 +68,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/fundTool">
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>
