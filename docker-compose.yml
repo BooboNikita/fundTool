@@ -8,11 +8,12 @@ services:
     container_name: fundtool-backend
     restart: unless-stopped
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: ${MYSQL_USER:-fundtool}
-      DB_PASSWORD: ${MYSQL_PASSWORD:-fundtool_password}
-      DB_NAME: ${MYSQL_DATABASE:-fund_tool}
+      NODE_ENV: production
+      PROD_DB_HOST: mysql_n7tn-mysql_N7tN-1
+      PROD_DB_PORT: 3306
+      PROD_DB_USER: root
+      PROD_DB_PASSWORD: i8ZPbjzY7CiXNStp
+      PROD_DB_NAME: fund_tool
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
     ports:
       - "3035:3035"
