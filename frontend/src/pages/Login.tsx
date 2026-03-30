@@ -1,31 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { authApi } from '../utils/api';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { Card, CardBody } from '../components/Card';
-import './Login.css';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { authApi } from "../utils/api";
+import { useAuth } from "../contexts/AuthContext";
+import { Button } from "../components/Button";
+import { Input } from "../components/Input";
+import { Card, CardBody } from "../components/Card";
+import "./Login.css";
 
 export function Login() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       const response = await authApi.login(username, password);
       login(response.data.token, response.data.user);
-      navigate('/');
+      console.log("登录成功", response.data);
+      navigate("/");
     } catch (err: any) {
-      setError(err.response?.data?.error || '登录失败，请重试');
+      console.error("登录失败", err);
+      setError(err.response?.data?.error || "登录失败，请重试");
     } finally {
       setLoading(false);
     }

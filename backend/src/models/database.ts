@@ -1,19 +1,46 @@
-import mysql, { Pool, PoolConnection } from 'mysql2/promise';
+import mysql, { Pool, PoolConnection } from "mysql2/promise";
+
+const env = process.env.NODE_ENV || "development";
+const isDev = env === "development";
+
+const dbConfig = {
+  host: isDev ? process.env.DEV_DB_HOST : process.env.PROD_DB_HOST || "localhost",
+  port: parseInt(isDev ? process.env.DEV_DB_PORT || "3306" : process.env.PROD_DB_PORT || "3306"),
+  user: isDev ? process.env.DEV_DB_USER : process.env.PROD_DB_USER || "root",
+  password: isDev ? process.env.DEV_DB_PASSWORD : process.env.PROD_DB_PASSWORD || "",
+  database: isDev ? process.env.DEV_DB_NAME : process.env.PROD_DB_NAME || "fund_tool",
+};
+
+console.log(`Running in ${env} mode, connecting to database: ${dbConfig.database}@${dbConfig.host}`);
+
+async function createDatabaseIfNotExists(): Promise<void> {
+  const connection = await mysql.createConnection({
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    password: dbConfig.password,
+  });
+
+  try {
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    console.log(`Database '${dbConfig.database}' ensured to exist`);
+  } finally {
+    await connection.end();
+  }
+}
 
 const pool: Pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'fund_tool',
+  ...dbConfig,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 export async function initDatabase(): Promise<void> {
+  await createDatabaseIfNotExists();
+
   const connection = await pool.getConnection();
-  
+
   try {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
@@ -23,7 +50,7 @@ export async function initDatabase(): Promise<void> {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    
+
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS funds (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -38,10 +65,10 @@ export async function initDatabase(): Promise<void> {
         UNIQUE KEY unique_user_fund (user_id, code)
       )
     `);
-    
+
     try {
       const [columns] = await connection.execute(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'funds' AND COLUMN_NAME = 'category'`
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'funds' AND COLUMN_NAME = 'category'`,
       );
       if ((columns as any[]).length > 0) {
         await connection.execute(`
@@ -50,21 +77,25 @@ export async function initDatabase(): Promise<void> {
         await connection.execute(`ALTER TABLE funds DROP COLUMN category`);
       }
     } catch (e: any) {
-      console.log('Migration check:', e.message);
+      console.log("Migration check:", e.message);
     }
-    
+
     try {
-      await connection.execute(`ALTER TABLE funds ADD COLUMN is_watchlist BOOLEAN DEFAULT TRUE`);
+      await connection.execute(
+        `ALTER TABLE funds ADD COLUMN is_watchlist BOOLEAN DEFAULT TRUE`,
+      );
     } catch (e: any) {
-      if (e.code !== 'ER_DUP_FIELDNAME') throw e;
+      if (e.code !== "ER_DUP_FIELDNAME") throw e;
     }
-    
+
     try {
-      await connection.execute(`ALTER TABLE funds ADD COLUMN is_holding BOOLEAN DEFAULT FALSE`);
+      await connection.execute(
+        `ALTER TABLE funds ADD COLUMN is_holding BOOLEAN DEFAULT FALSE`,
+      );
     } catch (e: any) {
-      if (e.code !== 'ER_DUP_FIELDNAME') throw e;
+      if (e.code !== "ER_DUP_FIELDNAME") throw e;
     }
-    
+
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS dingtalk_config (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -82,8 +113,8 @@ export async function initDatabase(): Promise<void> {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
-    
-    console.log('Database tables initialized');
+
+    console.log("Database tables initialized");
   } finally {
     connection.release();
   }
