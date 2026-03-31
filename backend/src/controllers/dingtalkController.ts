@@ -461,12 +461,19 @@ export async function startScheduler(): Promise<void> {
 
         let shouldPush = false;
 
-        if (intervalHours > 0 && config.last_push_time) {
-          const lastPush = new Date(config.last_push_time);
-          const hoursSinceLastPush =
-            (now.getTime() - lastPush.getTime()) / (1000 * 60 * 60);
-          if (hoursSinceLastPush >= intervalHours && isWithinTradingHours()) {
-            shouldPush = true;
+        if (intervalHours > 0) {
+          if (!config.last_push_time) {
+            // 从未推送过，且在当前交易时间内
+            if (isWithinTradingHours()) {
+              shouldPush = true;
+            }
+          } else {
+            const lastPush = new Date(config.last_push_time);
+            const hoursSinceLastPush =
+              (now.getTime() - lastPush.getTime()) / (1000 * 60 * 60);
+            if (hoursSinceLastPush >= intervalHours && isWithinTradingHours()) {
+              shouldPush = true;
+            }
           }
         } else if (pushTimes.includes(currentTime)) {
           shouldPush = true;
