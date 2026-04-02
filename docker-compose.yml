@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: fundtool-backend
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
       PROD_DB_HOST: mysql_n7tn-mysql_N7tN-1
@@ -14,7 +16,6 @@ services:
       PROD_DB_USER: root
       PROD_DB_PASSWORD: i8ZPbjzY7CiXNStp
       PROD_DB_NAME: fund_tool
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
     ports:
       - "3035:3035"
     networks:
