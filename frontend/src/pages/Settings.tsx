@@ -36,7 +36,7 @@ export function Settings() {
       if (response.data.config) {
         const cfg = response.data.config;
         setConfig(cfg);
-        if (cfg.push_interval_hours > 0) {
+        if ((cfg.push_interval_hours || 0) > 0) {
           setPushMode("interval");
         } else {
           setPushMode("time");
@@ -54,11 +54,11 @@ export function Settings() {
       alert("请至少选择一种推送分类");
       return;
     }
-    if (pushMode === "time" && config.push_times.length === 0) {
+    if (pushMode === "time" && (config.push_times || []).length === 0) {
       alert("请至少添加一个推送时间");
       return;
     }
-    if (pushMode === "interval" && config.push_interval_hours === 0) {
+    if (pushMode === "interval" && (config.push_interval_hours || 0) === 0) {
       alert("请选择推送间隔时间");
       return;
     }
@@ -66,7 +66,7 @@ export function Settings() {
     const saveConfig = {
       ...config,
       push_interval_hours:
-        pushMode === "interval" ? config.push_interval_hours : 0,
+        pushMode === "interval" ? config.push_interval_hours || 0 : 0,
     };
 
     setSaving(true);
@@ -110,20 +110,22 @@ export function Settings() {
 
   const addPushTime = () => {
     if (!newTime) return;
-    if (config.push_times.includes(newTime)) {
+    const currentTimes = config.push_times || [];
+    if (currentTimes.includes(newTime)) {
       alert("该时间已存在");
       return;
     }
     setConfig({
       ...config,
-      push_times: [...config.push_times, newTime].sort(),
+      push_times: [...currentTimes, newTime].sort(),
     });
   };
 
   const removePushTime = (time: string) => {
+    const currentTimes = config.push_times || [];
     setConfig({
       ...config,
-      push_times: config.push_times.filter((t) => t !== time),
+      push_times: currentTimes.filter((t) => t !== time),
     });
   };
 
@@ -219,7 +221,7 @@ export function Settings() {
                       </Button>
                     </div>
                     <div className="time-tags">
-                      {config.push_times.map((time) => (
+                      {(config.push_times || []).map((time) => (
                         <span key={time} className="time-tag">
                           {time}
                           <button

@@ -6,6 +6,8 @@ import { Register } from "./pages/Register";
 import { Home } from "./pages/Home";
 import { FundExplorer } from "./pages/FundExplorer";
 import { Settings } from "./pages/Settings";
+import { AIAssistant } from "./pages/AIAssistant";
+import { Admin } from "./pages/Admin";
 import "./styles/global.css";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -58,6 +60,22 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <Settings />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/ai-assistant"
+        element={
+          <PrivateRoute>
+            <AIAssistant />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute>
+            <Admin />
           </PrivateRoute>
         }
       />

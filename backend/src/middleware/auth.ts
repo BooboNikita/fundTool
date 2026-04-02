@@ -15,14 +15,15 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
   const token = authHeader.substring(7);
   
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; username?: string };
     req.userId = decoded.userId;
+    req.username = decoded.username;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
 };
 
-export const generateToken = (userId: number): string => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+export const generateToken = (userId: number, username?: string): string => {
+  return jwt.sign({ userId, username }, JWT_SECRET, { expiresIn: '7d' });
 };

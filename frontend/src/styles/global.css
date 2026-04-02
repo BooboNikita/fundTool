@@ -3,14 +3,23 @@
   --bg-secondary: #1a1a1a;
   --bg-tertiary: #252525;
   --bg-card: #1e1e1e;
+  --bg-hover: #2a2a2a;
   --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
+  --text-tertiary: #808080;
   --text-muted: #666666;
+  --primary-color: #6366f1;
+  --primary-hover: #4f46e5;
   --accent-primary: #6366f1;
   --accent-secondary: #818cf8;
   --accent-success: #22c55e;
+  --success-color: #22c55e;
+  --success-hover: #16a34a;
   --accent-danger: #ef4444;
+  --danger-color: #ef4444;
+  --danger-hover: #dc2626;
   --accent-warning: #f59e0b;
+  --info-color: #3b82f6;
   --border-color: #333333;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { fundApi } from "../utils/api";
+import { fundApi, menuApi, MenuPermissions } from "../utils/api";
 import { FundWithEstimation, FundSearchResult } from "../types";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
@@ -25,6 +25,10 @@ export function Home() {
   const [addingCode, setAddingCode] = useState("");
   const [addWatchlist, setAddWatchlist] = useState(true);
   const [addHolding, setAddHolding] = useState(false);
+  const [menuPermissions, setMenuPermissions] = useState<MenuPermissions>({
+    aiAssistant: false,
+    admin: false,
+  });
 
   const fetchPortfolio = useCallback(
     async (showRefreshLoader = false) => {
@@ -49,7 +53,18 @@ export function Home() {
 
   useEffect(() => {
     fetchPortfolio();
+    fetchMenuPermissions();
   }, [fetchPortfolio]);
+
+  const fetchMenuPermissions = async () => {
+    try {
+      const { data } = await menuApi.getPermissions();
+      setMenuPermissions(data.permissions);
+    } catch (error) {
+      console.error("Failed to fetch menu permissions:", error);
+      setMenuPermissions({ aiAssistant: false, admin: false });
+    }
+  };
 
   const handleSearch = async () => {
     if (!searchKeyword.trim()) return;
@@ -187,6 +202,24 @@ export function Home() {
             >
               设置
             </Button>
+            {menuPermissions.aiAssistant && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/ai-assistant")}
+              >
+                AI助手
+              </Button>
+            )}
+            {menuPermissions.admin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/admin")}
+              >
+                管理
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"
