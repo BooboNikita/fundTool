@@ -158,6 +158,9 @@ export async function initDatabase(): Promise<void> {
         session_id INT NOT NULL,
         role ENUM('user', 'assistant') NOT NULL,
         content TEXT NOT NULL,
+        tool_calls JSON DEFAULT NULL,
+        is_error BOOLEAN DEFAULT FALSE,
+        deleted BOOLEAN DEFAULT FALSE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE,
@@ -209,15 +212,28 @@ export async function initDatabase(): Promise<void> {
 
       // 检查是否需要添加 deleted 字段
       const [deletedColumns] = await connection.execute(
-        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ai_chat_history' AND COLUMN_NAME = 'deleted'"
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ai_chat_history' AND COLUMN_NAME = 'deleted'",
       );
 
       if ((deletedColumns as any[]).length === 0) {
         console.log("Adding deleted column to ai_chat_history table...");
         await connection.execute(
-          "ALTER TABLE ai_chat_history ADD COLUMN deleted BOOLEAN DEFAULT FALSE"
+          "ALTER TABLE ai_chat_history ADD COLUMN deleted BOOLEAN DEFAULT FALSE",
         );
         console.log("deleted column added");
+      }
+
+      // 检查是否需要添加 tool_calls 字段
+      const [toolCallsColumns] = await connection.execute(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'ai_chat_history' AND COLUMN_NAME = 'tool_calls'",
+      );
+
+      if ((toolCallsColumns as any[]).length === 0) {
+        console.log("Adding tool_calls column to ai_chat_history table...");
+        await connection.execute(
+          "ALTER TABLE ai_chat_history ADD COLUMN tool_calls JSON DEFAULT NULL",
+        );
+        console.log("tool_calls column added");
       }
     } catch (e: any) {
       console.log("Migration check error:", e.message);

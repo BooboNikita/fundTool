@@ -32,7 +32,6 @@ export function AIAssistant() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 显示 toast
   const showToast = (message: string) => {
@@ -51,22 +50,8 @@ export function AIAssistant() {
       container.scrollHeight - container.scrollTop - container.clientHeight <
       50;
 
-    // 如果用户不在底部，标记为手动滚动
-    if (!isAtBottom) {
-      setIsUserScrolling(true);
-
-      // 清除之前的定时器
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      // 3秒后恢复自动滚动
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsUserScrolling(false);
-      }, 3000);
-    } else {
-      setIsUserScrolling(false);
-    }
+    // 只有当用户滚动到底部时，才恢复自动滚动
+    setIsUserScrolling(!isAtBottom);
   };
 
   useEffect(() => {
@@ -103,7 +88,13 @@ export function AIAssistant() {
   const loadSessionMessages = async (sessionId: number) => {
     try {
       const { data } = await aiApi.getHistory(sessionId);
-      setMessages(data.history);
+      // 将后端的字段映射到前端
+      const messages = data.history.map((msg: any) => ({
+        ...msg,
+        toolCalls: msg.tool_calls,
+        isError: msg.is_error,
+      }));
+      setMessages(messages);
     } catch (error) {
       console.error("Failed to load messages:", error);
     }
@@ -187,6 +178,7 @@ export function AIAssistant() {
     options: {
       onSessionId?: (sessionId: number) => void;
       onContent?: (content: string) => void;
+      onToolCall?: (toolCall: any) => void;
       onError?: (error: Error) => void;
     } = {},
   ): Promise<string> => {
@@ -238,8 +230,22 @@ export function AIAssistant() {
                     options.onContent(assistantMessage);
                   }
                 }
+                if (data.toolCall && options.onToolCall) {
+                  options.onToolCall(data.toolCall);
+                }
+                if (data.error) {
+                  // 处理后端返回的错误
+                  const errorMessage = data.errorDetails
+                    ? `${data.error} (类型: ${data.errorDetails.type || "未知"}, 代码: ${data.errorDetails.code || "无"})`
+                    : data.error;
+                  throw new Error(errorMessage);
+                }
               } catch (e) {
-                // 忽略解析错误
+                // 如果是我们抛出的错误，继续抛出
+                if (e instanceof Error && e.message.includes("类型:")) {
+                  throw e;
+                }
+                // 否则忽略解析错误
               }
             }
           }
@@ -393,6 +399,46 @@ export function AIAssistant() {
             return newMessages;
           });
         },
+        onToolCall: (toolCall) => {
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            // 找到最后一个未删除的助手消息
+            let lastAssistantIndex = newMessages.length - 1;
+            while (
+              lastAssistantIndex >= 0 &&
+              (newMessages[lastAssistantIndex].role !== "assistant" ||
+                newMessages[lastAssistantIndex].deleted)
+            ) {
+              lastAssistantIndex--;
+            }
+
+            if (lastAssistantIndex >= 0) {
+              const currentToolCalls =
+                newMessages[lastAssistantIndex].toolCalls || [];
+              const existingIndex = currentToolCalls.findIndex(
+                (tc) =>
+                  tc.name === toolCall.name &&
+                  JSON.stringify(tc.arguments) ===
+                    JSON.stringify(toolCall.arguments),
+              );
+
+              let updatedToolCalls;
+              if (existingIndex >= 0) {
+                updatedToolCalls = [...currentToolCalls];
+                updatedToolCalls[existingIndex] = toolCall;
+              } else {
+                updatedToolCalls = [...currentToolCalls, toolCall];
+              }
+
+              newMessages[lastAssistantIndex] = {
+                ...newMessages[lastAssistantIndex],
+                toolCalls: updatedToolCalls,
+                hidden: false,
+              };
+            }
+            return newMessages;
+          });
+        },
       });
 
       // 只有新消息时才更新标题
@@ -407,13 +453,19 @@ export function AIAssistant() {
       }
     } catch (error: any) {
       if (error.name !== "AbortError") {
+        // 提取错误信息，优先显示详细的错误消息
+        const errorContent = error?.message
+          ? `抱歉，请求失败：${error.message}`
+          : isRefresh
+            ? "抱歉，重新生成回答失败，请稍后重试。"
+            : "抱歉，发送消息失败，请稍后重试。";
+
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: isRefresh
-              ? "抱歉，重新生成回答失败，请稍后重试。"
-              : "抱歉，发送消息失败，请稍后重试。",
+            content: errorContent,
+            isError: true,
           },
         ]);
       }

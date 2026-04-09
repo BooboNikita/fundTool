@@ -61,6 +61,13 @@ export interface DingTalkConfig {
   push_holding?: boolean;
 }
 
+export interface ToolCallInfo {
+  name: string;
+  arguments: Record<string, any>;
+  status: "running" | "completed" | "error";
+  result?: any;
+}
+
 export interface ChatMessage {
   id?: number;
   role: "user" | "assistant";
@@ -68,6 +75,8 @@ export interface ChatMessage {
   created_at?: string;
   deleted?: boolean;
   hidden?: boolean;
+  isError?: boolean;
+  toolCalls?: ToolCallInfo[];
 }
 
 export interface ChatSession {

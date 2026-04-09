@@ -172,6 +172,8 @@ export async function chatStream(
     return;
   }
 
+  let currentSessionId = sessionId;
+
   try {
     const [permissionRows] = await db.execute(
       "SELECT can_use_ai_assistant FROM user_ai_permissions WHERE user_id = ?",
@@ -184,9 +186,6 @@ export async function chatStream(
       return;
     }
 
-    let currentSessionId = sessionId;
-
-    // 如果没有提供sessionId，创建新话题
     if (!currentSessionId) {
       const [result] = await db.execute(
         "INSERT INTO ai_chat_sessions (user_id, title) VALUES (?, ?)",
@@ -207,9 +206,9 @@ export async function chatStream(
       [currentSessionId],
     );
 
-    // 获取该话题的历史记录
+    // 获取该话题的历史记录（排除错误消息，不作为 LLM 上下文）
     const [historyRows] = await db.execute(
-      "SELECT role, content FROM ai_chat_history WHERE session_id = ? ORDER BY created_at DESC LIMIT 20",
+      "SELECT role, content FROM ai_chat_history WHERE session_id = ? AND is_error = FALSE ORDER BY created_at DESC LIMIT 20",
       [currentSessionId],
     );
 
@@ -293,57 +292,92 @@ export async function chatStream(
     ];
 
     let currentResponse = "";
-    let toolCalls: any[] = [];
+    let iterationCount = 0;
+    const maxIterations = 10;
+    const allToolCallInfos: any[] = [];
 
-    const stream = await openai.chat.completions.create({
-      model: process.env.KIMI_MODEL || "moonshot-v1-8k",
-      messages,
-      tools,
-      tool_choice: "auto",
-      stream: true,
-    });
+    while (iterationCount < maxIterations) {
+      iterationCount++;
+      let toolCalls: any[] = [];
+      let iterationContent = "";
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta;
+      const stream = await openai.chat.completions.create({
+        model: process.env.KIMI_MODEL || "moonshot-v1-8k",
+        messages,
+        tools,
+        tool_choice: "auto",
+        stream: true,
+      });
 
-      if (delta?.tool_calls) {
-        for (const toolCall of delta.tool_calls) {
-          if (toolCall.index !== undefined) {
-            if (!toolCalls[toolCall.index]) {
-              toolCalls[toolCall.index] = {
-                id: toolCall.id,
-                type: toolCall.type,
-                function: {
-                  name: toolCall.function?.name || "",
-                  arguments: toolCall.function?.arguments || "",
-                },
-              };
-            } else {
-              if (toolCall.function?.arguments) {
-                toolCalls[toolCall.index].function.arguments +=
-                  toolCall.function.arguments;
+      // console.log("Stream started", stream);
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta;
+
+        // console.log("delta", chunk);
+
+        if (delta?.tool_calls) {
+          for (const toolCall of delta.tool_calls) {
+            if (toolCall.index !== undefined) {
+              if (!toolCalls[toolCall.index]) {
+                toolCalls[toolCall.index] = {
+                  id: toolCall.id,
+                  type: toolCall.type,
+                  function: {
+                    name: toolCall.function?.name || "",
+                    arguments: toolCall.function?.arguments || "",
+                  },
+                };
+              } else {
+                if (toolCall.function?.arguments) {
+                  toolCalls[toolCall.index].function.arguments +=
+                    toolCall.function.arguments;
+                }
               }
             }
           }
         }
-      }
 
-      if (delta?.content) {
-        currentResponse += delta.content;
-        res.write(`data: ${JSON.stringify({ content: delta.content })}
+        if (delta?.content) {
+          iterationContent += delta.content;
+          currentResponse += delta.content;
+          res.write(`data: ${JSON.stringify({ content: delta.content })}
 
 `);
+        }
       }
-    }
 
-    console.log("First stream ended, currentResponse:", currentResponse);
+      console.log(
+        `Iteration ${iterationCount} ended, content:`,
+        iterationContent,
+      );
 
-    if (toolCalls.length > 0) {
+      if (toolCalls.length === 0) {
+        console.log("No more tool calls, ending loop");
+        break;
+      }
+
+      console.log(
+        `Processing ${toolCalls.length} tool calls:`,
+        toolCalls.map((tc) => tc.function.name),
+      );
+
       const toolResults = [];
+      const toolCallInfos: any[] = [];
 
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         const functionArgs = JSON.parse(toolCall.function.arguments || "{}");
+
+        const toolCallInfo: any = {
+          name: functionName,
+          arguments: functionArgs,
+          status: "running",
+        };
+
+        res.write(`data: ${JSON.stringify({ toolCall: toolCallInfo })}
+
+`);
 
         let result;
         try {
@@ -366,9 +400,20 @@ export async function chatStream(
             default:
               result = { error: "Unknown function" };
           }
+          toolCallInfo.status = "completed";
+          toolCallInfo.result = result;
         } catch (error) {
           result = { error: String(error) };
+          toolCallInfo.status = "error";
+          toolCallInfo.result = result;
         }
+
+        toolCallInfos.push(toolCallInfo);
+        allToolCallInfos.push(toolCallInfo);
+
+        res.write(`data: ${JSON.stringify({ toolCall: toolCallInfo })}
+
+`);
 
         toolResults.push({
           tool_call_id: toolCall.id,
@@ -379,7 +424,7 @@ export async function chatStream(
 
       messages.push({
         role: "assistant",
-        content: currentResponse || null,
+        content: iterationContent || null,
         tool_calls: toolCalls.map((tc) => ({
           id: tc.id,
           type: tc.type,
@@ -390,41 +435,75 @@ export async function chatStream(
       for (const toolResult of toolResults) {
         messages.push(toolResult);
       }
-
-      const finalStream = await openai.chat.completions.create({
-        model: process.env.KIMI_MODEL || "moonshot-v1-8k",
-        messages,
-        stream: true,
-      });
-
-      for await (const chunk of finalStream) {
-        const content = chunk.choices[0]?.delta?.content;
-        if (content) {
-          currentResponse += content;
-          console.log("Final stream content:", content);
-          res.write(`data: ${JSON.stringify({ content })}
-
-`);
-        }
-      }
-      console.log("Final stream ended, total response:", currentResponse);
     }
+
+    if (iterationCount >= maxIterations) {
+      console.warn("Reached maximum tool call iterations");
+    }
+
+    console.log("All tool calls processed:", allToolCallInfos);
 
     // 保存AI回复
     await db.execute(
-      "INSERT INTO ai_chat_history (user_id, session_id, role, content) VALUES (?, ?, ?, ?)",
-      [userId, currentSessionId, "assistant", currentResponse],
+      "INSERT INTO ai_chat_history (user_id, session_id, role, content, tool_calls) VALUES (?, ?, ?, ?, ?)",
+      [
+        userId,
+        currentSessionId,
+        "assistant",
+        currentResponse,
+        allToolCallInfos.length > 0 ? allToolCallInfos : null,
+      ],
     );
 
-    res.write(`data: ${JSON.stringify({ done: true })}
-
-`);
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI chat error:", error);
-    res.write(`data: ${JSON.stringify({ error: "Chat service error" })}
 
-`);
+    // 提取详细的错误信息
+    let errorMessage = "Chat service error";
+    let errorDetails = null;
+
+    if (error?.error?.message) {
+      // OpenAI API 错误格式
+      errorMessage = error.error.message;
+      errorDetails = {
+        type: error.error.type,
+        code: error.error.code,
+        param: error.error.param,
+      };
+    } else if (error?.message) {
+      // 通用错误格式
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+
+    // 构建用户友好的错误消息
+    const userFriendlyError = `抱歉，AI 服务出错：${errorMessage}`;
+
+    // 将错误消息保存到数据库
+    try {
+      if (currentSessionId) {
+        await db.execute(
+          "INSERT INTO ai_chat_history (user_id, session_id, role, content, is_error) VALUES (?, ?, ?, ?, ?)",
+          [userId, currentSessionId, "assistant", userFriendlyError, true],
+        );
+
+        // 更新话题时间
+        await db.execute(
+          "UPDATE ai_chat_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+          [currentSessionId],
+        );
+      }
+    } catch (dbError) {
+      console.error("Failed to save error message to database:", dbError);
+    }
+
+    res.write(`data: ${JSON.stringify({
+      error: errorMessage,
+      errorDetails,
+    })}\n\n`);
     res.end();
   }
 }
@@ -478,11 +557,32 @@ export async function getChatHistory(
 
   try {
     const [rows] = await db.execute(
-      "SELECT id, role, content, created_at FROM ai_chat_history WHERE user_id = ? AND session_id = ? AND deleted = FALSE ORDER BY created_at ASC LIMIT 100",
+      "SELECT id, role, content, tool_calls, is_error, created_at FROM ai_chat_history WHERE user_id = ? AND session_id = ? AND deleted = FALSE ORDER BY created_at ASC LIMIT 100",
       [userId, sessionId],
     );
 
-    res.json({ history: rows });
+    // 解析 tool_calls JSON 字段
+    const history = (rows as any[]).map((row) => {
+      let toolCalls = row.tool_calls;
+      if (toolCalls) {
+        // 如果是字符串，尝试解析
+        if (typeof toolCalls === "string") {
+          try {
+            toolCalls = JSON.parse(toolCalls);
+          } catch (e) {
+            // 如果解析失败（如 "[object Object]"），设为 null
+            toolCalls = null;
+          }
+        }
+      }
+      return {
+        ...row,
+        tool_calls: toolCalls,
+        is_error: row.is_error === 1,
+      };
+    });
+
+    res.json({ history });
   } catch (error) {
     console.error("Failed to get chat history:", error);
     res.status(500).json({ error: "Failed to get chat history" });
