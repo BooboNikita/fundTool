@@ -34,7 +34,7 @@ api.interceptors.response.use(
       if (!isAuthEndpoint) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = `${(import.meta as any).env.BASE_URL}login`;
+        window.location.href = `${(import.meta as any).env.BASE_URL}/login`;
       }
     }
     return Promise.reject(error);
