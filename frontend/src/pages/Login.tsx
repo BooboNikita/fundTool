@@ -8,8 +8,15 @@ import { Card, CardBody } from "../components/Card";
 import "./Login.css";
 
 export function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(
+    () => localStorage.getItem("last_username") || "",
+  );
+  const [password, setPassword] = useState(
+    () => localStorage.getItem("last_password") || "",
+  );
+  const [rememberPassword, setRememberPassword] = useState(
+    () => localStorage.getItem("remember_password") === "true",
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -23,6 +30,17 @@ export function Login() {
     try {
       const response = await authApi.login(username, password);
       login(response.data.token, response.data.user);
+
+      // 保存账号
+      localStorage.setItem("last_username", username);
+      if (rememberPassword) {
+        localStorage.setItem("last_password", password);
+        localStorage.setItem("remember_password", "true");
+      } else {
+        localStorage.removeItem("last_password");
+        localStorage.setItem("remember_password", "false");
+      }
+
       console.log("登录成功", response.data);
       navigate("/");
     } catch (err: any) {
@@ -64,6 +82,14 @@ export function Login() {
               placeholder="请输入密码"
               required
             />
+            <label className="login-remember">
+              <input
+                type="checkbox"
+                checked={rememberPassword}
+                onChange={(e) => setRememberPassword(e.target.checked)}
+              />
+              记住密码
+            </label>
             <Button type="submit" loading={loading} fullWidth>
               登录
             </Button>
