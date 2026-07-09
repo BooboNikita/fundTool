@@ -24,7 +24,11 @@
 .header-content h1 {
   font-size: 18px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(
+    135deg,
+    var(--accent-primary),
+    var(--accent-secondary)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -88,6 +92,38 @@
 .toolbar-actions {
   display: flex;
   gap: 8px;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-select {
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sort-order-btn {
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sort-order-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .search-card {
@@ -319,7 +355,11 @@
 }
 
 .fund-category.both {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(34, 197, 94, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.2),
+    rgba(34, 197, 94, 0.2)
+  );
   color: var(--accent-primary);
 }
 
@@ -422,6 +462,10 @@
   }
 
   .toolbar-actions {
+    justify-content: center;
+  }
+
+  .sort-controls {
     justify-content: center;
   }
 

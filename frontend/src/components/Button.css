@@ -75,8 +75,8 @@
   color: var(--text-primary);
 }
 
-.btn-loading {
-  color: transparent;
+.btn-loading .btn-text {
+  opacity: 0;
 }
 
 .btn-spinner {

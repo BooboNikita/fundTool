@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { fundApi, menuApi, MenuPermissions } from "../utils/api";
@@ -9,6 +9,8 @@ import { Card, CardHeader, CardBody } from "../components/Card";
 import "./Home.css";
 
 type FilterType = "all" | "watchlist" | "holding";
+type SortField = "code" | "growthRate";
+type SortOrder = "asc" | "desc";
 
 export function Home() {
   const { user, logout } = useAuth();
@@ -25,6 +27,8 @@ export function Home() {
   const [addingCode, setAddingCode] = useState("");
   const [addWatchlist, setAddWatchlist] = useState(true);
   const [addHolding, setAddHolding] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("growthRate");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [menuPermissions, setMenuPermissions] = useState<MenuPermissions>({
     aiAssistant: false,
     admin: false,
@@ -148,6 +152,26 @@ export function Home() {
     return tags;
   };
 
+  const parseGrowthRateValue = (rate: string | undefined): number => {
+    if (!rate) return 0;
+    return parseFloat(rate.replace("%", ""));
+  };
+
+  const sortedFunds = useMemo(() => {
+    const result = [...funds];
+    result.sort((a, b) => {
+      if (sortField === "code") {
+        return sortOrder === "asc"
+          ? a.code.localeCompare(b.code)
+          : b.code.localeCompare(a.code);
+      }
+      const rateA = parseGrowthRateValue(a.estimation?.estimate_growth_rate);
+      const rateB = parseGrowthRateValue(b.estimation?.estimate_growth_rate);
+      return sortOrder === "asc" ? rateA - rateB : rateB - rateA;
+    });
+    return result;
+  }, [funds, sortField, sortOrder]);
+
   return (
     <div className="home-container">
       <header className="home-header">
@@ -182,6 +206,25 @@ export function Home() {
               onClick={() => setActiveFilter("holding")}
             >
               持有
+            </button>
+          </div>
+          <div className="sort-controls">
+            <select
+              className="sort-select"
+              value={sortField}
+              onChange={(e) => setSortField(e.target.value as SortField)}
+            >
+              <option value="code">基金号码</option>
+              <option value="growthRate">涨幅</option>
+            </select>
+            <button
+              className="sort-order-btn"
+              onClick={() =>
+                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+              }
+              title={sortOrder === "asc" ? "升序" : "降序"}
+            >
+              {sortOrder === "asc" ? "↑" : "↓"}
             </button>
           </div>
           <div className="toolbar-actions">
@@ -350,7 +393,7 @@ export function Home() {
           </Card>
         ) : (
           <div className="fund-list">
-            {funds.map((fund) => (
+            {sortedFunds.map((fund) => (
               <div key={fund.code} className="fund-item">
                 <div className="fund-main">
                   <div className="fund-info">

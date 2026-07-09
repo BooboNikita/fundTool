@@ -49,6 +49,7 @@ export function Login() {
             <Input
               label="用户名"
               type="text"
+              autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="请输入用户名"
@@ -57,6 +58,7 @@ export function Login() {
             <Input
               label="密码"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="请输入密码"
