@@ -2,7 +2,7 @@ export const formatTime = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffDays = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
   );
 
   if (diffDays === 0) {
@@ -20,4 +20,18 @@ export const formatTime = (dateString: string) => {
       day: "numeric",
     });
   }
+};
+
+export const formatMonthDay = (dateString?: string | null) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return dateString;
+  }
+  return date
+    .toLocaleDateString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+    })
+    .replace(/\//g, "-");
 };

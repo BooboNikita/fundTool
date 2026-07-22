@@ -6,6 +6,7 @@ import { FundWithEstimation, FundSearchResult } from "../types";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Card, CardHeader, CardBody } from "../components/Card";
+import { formatMonthDay, formatTime } from "../utils/date";
 import "./Home.css";
 
 type FilterType = "all" | "watchlist" | "holding";
@@ -52,7 +53,7 @@ export function Home() {
         setRefreshing(false);
       }
     },
-    [activeFilter],
+    [activeFilter]
   );
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export function Home() {
   const handleToggleFlag = async (
     code: string,
     field: "is_watchlist" | "is_holding",
-    value: boolean,
+    value: boolean
   ) => {
     const fund = funds.find((f) => f.code === code);
     if (!fund) return;
@@ -397,7 +398,10 @@ export function Home() {
               <div key={fund.code} className="fund-item">
                 <div className="fund-main">
                   <div className="fund-info">
-                    <span className="fund-name">
+                    <span
+                      className="fund-name"
+                      title={fund.estimation?.name || fund.name}
+                    >
                       {fund.estimation?.name || fund.name}
                     </span>
                     <span className="fund-code">{fund.code}</span>
@@ -408,8 +412,8 @@ export function Home() {
                           fund.is_watchlist && fund.is_holding
                             ? "both"
                             : fund.is_watchlist
-                              ? "watchlist"
-                              : "holding"
+                            ? "watchlist"
+                            : "holding"
                         }`}
                       >
                         {tag}
@@ -433,8 +437,14 @@ export function Home() {
                       <span className="value-label">涨幅</span>
                       <span className="value-num">
                         {formatGrowthRate(
-                          fund.estimation?.estimate_growth_rate,
+                          fund.estimation?.estimate_growth_rate
                         )}
+                      </span>
+                    </div>
+                    <div className="value-item highlight">
+                      <span className="value-label">更新时间</span>
+                      <span className="value-num">
+                        {formatMonthDay(fund.estimation?.estimate_time)}
                       </span>
                     </div>
                   </div>
@@ -448,7 +458,7 @@ export function Home() {
                         handleToggleFlag(
                           fund.code,
                           "is_watchlist",
-                          e.target.checked,
+                          e.target.checked
                         )
                       }
                     />
@@ -462,7 +472,7 @@ export function Home() {
                         handleToggleFlag(
                           fund.code,
                           "is_holding",
-                          e.target.checked,
+                          e.target.checked
                         )
                       }
                     />

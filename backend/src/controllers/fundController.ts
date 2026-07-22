@@ -2,12 +2,13 @@ import { Response } from "express";
 import axios from "axios";
 import db from "../models/database";
 import { AuthRequest } from "../types/express";
-import { FundEstimation, FundSearchResult } from "../types";
+import { FundSearchResult } from "../types";
+import {
+  fetchFundEstimation,
+  fetchFundEstimations,
+} from "../api/fundValuation";
 
 const FUND_NAME_URL = "https://fund.eastmoney.com/js/fundcode_search.js";
-const FUND_ESTIMATE_URL = "http://fundgz.1234567.com.cn/js";
-
-const JSONPGZ_RE = /jsonpgz\(\s*(\{.*?\})\s*\)\s*;?\s*$/;
 
 interface FundInfo {
   code: string;
@@ -37,7 +38,7 @@ export async function getFundInfoMap(): Promise<Map<string, FundInfo>> {
     const fundArrayMatch = content.match(/\[([\s\S]*)\]/);
     if (fundArrayMatch) {
       const fundItems = fundArrayMatch[1].match(
-        /\["[^"]+","[^"]+","[^"]+","[^"]+","[^"]+"\]/g,
+        /\["[^"]+","[^"]+","[^"]+","[^"]+","[^"]+"\]/g
       );
       if (fundItems) {
         for (const item of fundItems) {
@@ -64,7 +65,7 @@ export async function getFundInfoMap(): Promise<Map<string, FundInfo>> {
 
 export async function searchFund(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const { keyword, limit = 50 } = req.query;
 
@@ -97,7 +98,7 @@ export async function searchFund(
 
 export async function getAllFunds(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const { page = 1, limit = 100 } = req.query;
 
@@ -123,61 +124,6 @@ export async function getAllFunds(
   }
 }
 
-export async function fetchFundEstimation(
-  fundCode: string,
-): Promise<FundEstimation | null> {
-  const url = `${FUND_ESTIMATE_URL}/${fundCode}.js`;
-  const params = { rt: Date.now() };
-
-  try {
-    const response = await axios.get(url, {
-      params,
-      timeout: 10000,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        Referer: "http://fundgz.1234567.com.cn/",
-      },
-      responseType: "arraybuffer",
-    });
-
-    let text = response.data.toString("utf-8");
-
-    if (!text.includes("jsonpgz(")) {
-      try {
-        text = response.data.toString("gbk");
-      } catch {
-        text = response.data.toString("utf-8");
-      }
-    }
-
-    const match = text.match(JSONPGZ_RE);
-    if (!match) {
-      return null;
-    }
-
-    const payload = JSON.parse(match[1]);
-    let gszzl = payload.gszzl;
-    if (typeof gszzl === "string" && gszzl && !gszzl.endsWith("%")) {
-      gszzl = gszzl + "%";
-    }
-
-    return {
-      code: payload.fundcode || fundCode,
-      fund_code: payload.fundcode || fundCode,
-      name: payload.name,
-      net_value_date: payload.jzrq,
-      net_value: payload.dwjz,
-      estimate_net_value: payload.gsz,
-      estimate_growth_rate: gszzl,
-      estimate_time: payload.gztime,
-    };
-  } catch (error) {
-    console.error(`Failed to fetch estimation for ${fundCode}:`, error);
-    return null;
-  }
-}
-
 export async function addFund(req: AuthRequest, res: Response): Promise<void> {
   const userId = req.userId;
   const { code, note = "", is_watchlist = true, is_holding = false } = req.body;
@@ -199,7 +145,7 @@ export async function addFund(req: AuthRequest, res: Response): Promise<void> {
 
     const [result] = await db.execute(
       "INSERT INTO funds (user_id, code, name, note, is_watchlist, is_holding) VALUES (?, ?, ?, ?, ?, ?)",
-      [userId, code, fundName, note, is_watchlist ? 1 : 0, is_holding ? 1 : 0],
+      [userId, code, fundName, note, is_watchlist ? 1 : 0, is_holding ? 1 : 0]
     );
 
     const insertId = (result as any).insertId;
@@ -227,7 +173,7 @@ export async function addFund(req: AuthRequest, res: Response): Promise<void> {
 
 export async function updateFundFlags(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = req.userId;
   const { code } = req.params;
@@ -241,7 +187,7 @@ export async function updateFundFlags(
   try {
     const [result] = await db.execute(
       "UPDATE funds SET is_watchlist = ?, is_holding = ? WHERE user_id = ? AND code = ?",
-      [is_watchlist ? 1 : 0, is_holding ? 1 : 0, userId, code],
+      [is_watchlist ? 1 : 0, is_holding ? 1 : 0, userId, code]
     );
 
     if ((result as any).affectedRows === 0) {
@@ -258,7 +204,7 @@ export async function updateFundFlags(
 
 export async function removeFund(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = req.userId;
   const { code } = req.params;
@@ -271,7 +217,7 @@ export async function removeFund(
   try {
     const [result] = await db.execute(
       "DELETE FROM funds WHERE user_id = ? AND code = ?",
-      [userId, code],
+      [userId, code]
     );
 
     if ((result as any).affectedRows === 0) {
@@ -288,7 +234,7 @@ export async function removeFund(
 
 export async function getPortfolio(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = req.userId;
   const { filter } = req.query;
@@ -322,7 +268,7 @@ export async function getPortfolio(
 
 export async function getPortfolioEstimation(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = req.userId;
   const { filter } = req.query;
@@ -353,17 +299,18 @@ export async function getPortfolioEstimation(
       return;
     }
 
-    const estimations = await Promise.all(
-      funds.map(async (fund) => {
-        const estimation = await fetchFundEstimation(fund.code);
-        return {
-          ...fund,
-          is_watchlist: !!fund.is_watchlist,
-          is_holding: !!fund.is_holding,
-          estimation,
-        };
-      }),
+    const estimationMap = await fetchFundEstimations(
+      funds.map((fund) => fund.code)
     );
+    const estimations = funds.map((fund) => {
+      const estimation = estimationMap.get(fund.code) || null;
+      return {
+        ...fund,
+        is_watchlist: !!fund.is_watchlist,
+        is_holding: !!fund.is_holding,
+        estimation,
+      };
+    });
 
     res.json({ estimations });
   } catch (error) {
@@ -374,7 +321,7 @@ export async function getPortfolioEstimation(
 
 export async function getFundEstimation(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const { code } = req.params;
 
@@ -454,29 +401,28 @@ export const HOT_FUND_CODES = [
 export async function getTop10FundsData(): Promise<any[]> {
   const fundMap = await getFundInfoMap();
 
-  const estimations = await Promise.all(
-    HOT_FUND_CODES.map(async (code) => {
-      const estimation = await fetchFundEstimation(code);
-      const fundInfo = fundMap.get(code);
-      return {
-        code,
-        name: fundInfo?.name || estimation?.name || code,
-        type: fundInfo?.type || "",
-        estimation,
-      };
-    }),
-  );
+  const estimationMap = await fetchFundEstimations(HOT_FUND_CODES);
+  const estimations = HOT_FUND_CODES.map((code) => {
+    const estimation = estimationMap.get(code) || null;
+    const fundInfo = fundMap.get(code);
+    return {
+      code,
+      name: fundInfo?.name || estimation?.name || code,
+      type: fundInfo?.type || "",
+      estimation,
+    };
+  });
 
   const validEstimations = estimations.filter(
-    (e) => e.estimation && e.estimation.estimate_growth_rate,
+    (e) => e.estimation && e.estimation.estimate_growth_rate
   );
 
   validEstimations.sort((a, b) => {
     const rateA = parseFloat(
-      a.estimation!.estimate_growth_rate?.replace("%", "") || "0",
+      a.estimation!.estimate_growth_rate?.replace("%", "") || "0"
     );
     const rateB = parseFloat(
-      b.estimation!.estimate_growth_rate?.replace("%", "") || "0",
+      b.estimation!.estimate_growth_rate?.replace("%", "") || "0"
     );
     return rateB - rateA;
   });
@@ -486,7 +432,7 @@ export async function getTop10FundsData(): Promise<any[]> {
 
 export async function getTop10Funds(
   req: AuthRequest,
-  res: Response,
+  res: Response
 ): Promise<void> {
   try {
     const top10 = await getTop10FundsData();
@@ -499,7 +445,7 @@ export async function getTop10Funds(
 
 export async function searchFunds(
   keyword: string,
-  limit: number = 50,
+  limit: number = 50
 ): Promise<FundSearchResult[]> {
   const fundMap = await getFundInfoMap();
   const results: FundSearchResult[] = [];
