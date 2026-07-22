@@ -439,12 +439,9 @@ export function Home() {
                         {formatGrowthRate(
                           fund.estimation?.estimate_growth_rate,
                         )}
-                      </span>
-                    </div>
-                    <div className="value-item highlight">
-                      <span className="value-label">更新时间</span>
-                      <span className="value-num">
-                        {formatMonthDay(fund.estimation?.estimate_time)}
+                        <span className="value-time">
+                          {formatMonthDay(fund.estimation?.estimate_time)}
+                        </span>
                       </span>
                     </div>
                   </div>

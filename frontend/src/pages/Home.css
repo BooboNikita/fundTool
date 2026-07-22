@@ -389,6 +389,17 @@
 .value-item.highlight .value-num {
   font-size: 15px;
   font-weight: 600;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.value-time {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 .rate-positive {
